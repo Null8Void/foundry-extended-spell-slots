@@ -21,30 +21,22 @@ Hooks.once("init", () => {
   });
 
   game.settings.register("extended-spell-slots", "showControls", {
-    name: "Show Add Spell Slot Button on Sheets",
-    hint: "Add a button to character sheets to add/remove spell slots",
+    name: "Show Spell Slot Controls on Sheets",
+    hint: "Add buttons to spell slots section to add/remove extended slots",
     scope: "world",
     config: true,
     type: Boolean,
     default: true,
     onChange: () => {
-      window.location.reload();
+      ui.notifications.info("Extended Spell Slots: Reload the page to see changes");
     }
   });
 
-  game.settings.register("extended-spell-slots", "openManager", {
+  game.settings.registerMenu("extended-spell-slots", "spellSlotManager", {
     name: "Spell Slot Manager",
     hint: "Open the Spell Slot Manager to add/remove spell slots for actors",
     scope: "world",
-    config: true,
-    type: Boolean,
-    default: false,
-    onChange: (value) => {
-      if (value) {
-        new ExtendedSpellSlotManager().render(true);
-        game.settings.set("extended-spell-slots", "openManager", false);
-      }
-    }
+    type: ExtendedSpellSlotManager
   });
 
   CONFIG.DND5E.maxSpellSlotLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
@@ -70,10 +62,10 @@ class ExtendedSpellSlotManager extends FormApplication {
       title: "Spell Slot Manager",
       id: "extended-spell-slot-manager",
       template: "modules/extended-spell-slots/templates/spellSlotManager.html",
-      width: 500,
-      height: 600,
+      width: 550,
+      height: 650,
       closeOnSubmit: false,
-      submitOnClose: false
+      submitOnClose: true
     });
   }
 
@@ -155,12 +147,11 @@ class ExtendedSpellSlotManager extends FormApplication {
       if (actor) await this.removeAllSlots(actor);
     });
 
-    html.find(".open-sheet").on("click", async (e) => {
+    html.find(".open-sheet-btn").on("click", async (e) => {
       const actorId = html.find('select[name="actor-select"]').val();
       const actor = game.actors.get(actorId);
       if (actor) {
         actor.sheet.render(true);
-        this.close();
       }
     });
   }
@@ -240,26 +231,36 @@ function addSpellSlotControls(html, actor) {
   const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || MAX_SPELL_SLOT_LEVEL;
   
   const controlsHtml = `
-    <div class="extended-spell-slots-controls" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 4px;">
-      <h3 style="margin: 0 0 8px 0; font-size: 14px;">Extended Spell Slots (10-${maxLevel})</h3>
-      <button class="add-extended-slots" data-actor-id="${actor.id}" style="margin-right: 5px;">
-        <i class="fas fa-plus"></i> Add All Extended Slots
-      </button>
-      <button class="remove-extended-slots" data-actor-id="${actor.id}" style="margin-right: 5px;">
-        <i class="fas fa-minus"></i> Remove All Extended Slots
-      </button>
-      <button class="open-slot-manager-btn" style="margin-right: 5px;">
-        <i class="fas fa-cog"></i> Slot Manager
-      </button>
+    <div class="extended-spell-slots-controls" style="margin: 10px 0; padding: 10px; background: rgba(0,0,0,0.05); border: 1px solid #ccc; border-radius: 4px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <i class="fas fa-magic" style="color: #7a2519;"></i>
+        <strong>Extended Spell Slots (10-${maxLevel})</strong>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="add-extended-slots" data-actor-id="${actor.id}">
+          <i class="fas fa-plus"></i> Add All Extended Slots
+        </button>
+        <button class="remove-extended-slots" data-actor-id="${actor.id}">
+          <i class="fas fa-minus"></i> Remove All Extended Slots
+        </button>
+        <button class="open-slot-manager-btn">
+          <i class="fas fa-cog"></i> Slot Manager
+        </button>
+      </div>
     </div>
   `;
 
-  const spellSlotsSection = html.find(".spell-slots, .spellbook, .tab[data-tab='spells'], .inventory .item[data-type='spell']").closest(".tab, .sheet-body");
+  const spellSlotsContainer = html.find(".spell-slots, .spellbook, .spellbook-header, .spell-slots-header");
   
-  if (spellSlotsSection.length) {
-    spellSlotsSection.first().append(controlsHtml);
+  if (spellSlotsContainer.length) {
+    spellSlotsContainer.first().after(controlsHtml);
   } else {
-    html.find(".sheet-content, .tab-group, .primary-body").first().append(controlsHtml);
+    const spellsTab = html.find('.tab[data-tab="spells"], .tab[class*="spells"]');
+    if (spellsTab.length) {
+      spellsTab.prepend(controlsHtml);
+    } else {
+      html.find(".sheet-body, .primary-body, .tab-group").first().prepend(controlsHtml);
+    }
   }
 
   html.find(".add-extended-slots").on("click", async (e) => {
@@ -275,7 +276,6 @@ function addSpellSlotControls(html, actor) {
       }
       await targetActor.update(updates);
       ui.notifications.info(`Added spell slots 10-${maxLevel} to ${targetActor.name}`);
-      targetActor.sheet.render();
     }
   });
 
@@ -292,7 +292,6 @@ function addSpellSlotControls(html, actor) {
       }
       await targetActor.update(updates);
       ui.notifications.info(`Removed spell slots 10-${maxLevel} from ${targetActor.name}`);
-      targetActor.sheet.render();
     }
   });
 

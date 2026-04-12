@@ -1,4 +1,6 @@
 <form>
+  <p style="margin-bottom: 10px; color: #666;">Manage spell slots for actors. Select an actor and adjust their spell slots.</p>
+  
   <div class="form-group">
     <label>Actor</label>
     <select name="actor-select">
@@ -6,35 +8,39 @@
       <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
       {{/each}}
     </select>
+    <button type="button" class="open-sheet-btn" style="margin-left: 10px;">
+      <i class="fas fa-user"></i> Open Sheet
+    </button>
   </div>
 
   {{#if selectedActor}}
-  <div class="form-group">
-    <label>Selected: {{selectedActor.name}}</label>
-  </div>
-
-  <div class="spell-slots-list">
-    <h3>Spell Slots</h3>
-    <table style="width: 100%;">
+  <div class="spell-slots-list" style="margin-top: 15px;">
+    <h3 style="margin-bottom: 10px;">
+      <i class="fas fa-magic"></i> Spell Slots for {{selectedActor.name}}
+    </h3>
+    <table style="width: 100%; border-collapse: collapse;">
       <thead>
-        <tr>
-          <th style="width: 20%; text-align: left;">Level</th>
-          <th style="width: 40%; text-align: center;">Available</th>
-          <th style="width: 40%; text-align: center;">Maximum</th>
+        <tr style="background: #ccc;">
+          <th style="padding: 8px; text-align: left; width: 25%;">Level</th>
+          <th style="padding: 8px; text-align: center; width: 37%;">Available</th>
+          <th style="padding: 8px; text-align: center; width: 38%;">Maximum</th>
         </tr>
       </thead>
       <tbody>
         {{#each spellSlots}}
-        <tr>
-          <td style="text-align: left;">{{ordinal this.level}} Level</td>
-          <td style="text-align: center;">
+        <tr style="border-bottom: 1px solid #ddd; {{#if (gt this.level 9)}}background: rgba(122, 37, 25, 0.1);{{/if}}">
+          <td style="padding: 8px; text-align: left;">
+            {{ordinal this.level}} Level
+            {{#if (gt this.level 9)}}<i class="fas fa-star" style="color: #7a2519;" title="Extended Slot"></i>{{/if}}
+          </td>
+          <td style="padding: 8px; text-align: center;">
             <button type="button" class="slot-decrease" data-level="{{this.level}}">-</button>
-            <span style="display: inline-block; width: 30px; text-align: center;">{{this.value}}</span>
+            <span style="display: inline-block; width: 40px; text-align: center; font-weight: bold;">{{this.value}}</span>
             <button type="button" class="slot-increase" data-level="{{this.level}}">+</button>
           </td>
-          <td style="text-align: center;">
+          <td style="padding: 8px; text-align: center;">
             <button type="button" class="slot-max-decrease" data-level="{{this.level}}">-</button>
-            <span style="display: inline-block; width: 30px; text-align: center;">{{this.max}}</span>
+            <span style="display: inline-block; width: 40px; text-align: center; font-weight: bold;">{{this.max}}</span>
             <button type="button" class="slot-max-increase" data-level="{{this.level}}">+</button>
           </td>
         </tr>
@@ -43,12 +49,16 @@
     </table>
   </div>
 
-  <div class="form-group" style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
-    <label>Quick Actions</label>
-    <button type="button" class="add-all-slots">Add All Extended Slots (10-{{maxLevel}})</button>
-    <button type="button" class="remove-all-slots">Remove All Extended Slots</button>
+  <div class="form-group" style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px;">
+    <label style="margin-bottom: 8px; display: block;">Quick Actions</label>
+    <button type="button" class="add-all-slots" style="margin-right: 5px;">
+      <i class="fas fa-plus"></i> Add All Extended Slots (10-{{maxLevel}})
+    </button>
+    <button type="button" class="remove-all-slots">
+      <i class="fas fa-minus"></i> Remove All Extended Slots
+    </button>
   </div>
   {{else}}
-  <p>No actors found.</p>
+  <p style="color: #666; font-style: italic;">No actors found in your world.</p>
   {{/if}}
 </form>
