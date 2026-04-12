@@ -67,13 +67,6 @@ Hooks.on("init", () => {
     type: Boolean,
     default: false
   });
-
-  game.settings.registerMenu("extended-spell-slots", "spellSlotManagerMenu", {
-    label: "Spell Slot Manager",
-    hint: "Open the Spell Slot Manager to add/remove spell slots for any actor",
-    scope: "world",
-    type: SpellSlotManager
-  });
 });
 
 class SpellSlotManager extends FormApplication {
