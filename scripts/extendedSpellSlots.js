@@ -3,12 +3,40 @@
 
 const MAX_SPELL_SLOT_LEVEL = 20;
 
-Hooks.once("init", () => {
+Hooks.once("dnd5e.init", () => {
   if (!CONFIG.DND5E) {
     console.error("Extended Spell Slots: DND5E system not found");
     return;
   }
 
+  const maxLevel = Math.max(20, Object.keys(CONFIG.DND5E.spellLevels).length - 1);
+  CONFIG.DND5E.maxSpellSlotLevel = maxLevel;
+
+  for (let i = 10; i <= maxLevel; i++) {
+    if (!CONFIG.DND5E.spellLevels[i]) {
+      CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
+    }
+  }
+
+  CONFIG.DND5E.spellSlotLevels = Array.from({ length: maxLevel }, (_, i) => i + 1);
+
+  if (!CONFIG.DND5E.spellScaling) CONFIG.DND5E.spellScaling = {};
+  for (let i = 10; i <= maxLevel; i++) {
+    if (!CONFIG.DND5E.spellScaling[i]) {
+      CONFIG.DND5E.spellScaling[i] = `Slot ${i}`;
+    }
+  }
+
+  if (CONFIG.DND5E.SPELL_SLOT_TABLE && CONFIG.DND5E.SPELL_SLOT_TABLE.length < 20) {
+    while (CONFIG.DND5E.SPELL_SLOT_TABLE.length < 20) {
+      CONFIG.DND5E.SPELL_SLOT_TABLE.push([4, 3, 3, 3, 3, 2, 2, 2, 1]);
+    }
+  }
+
+  console.log(`🔮 Extended Spell Slots: Max level set to ${maxLevel}`);
+});
+
+Hooks.on("init", () => {
   game.settings.register("extended-spell-slots", "maxSlotLevel", {
     name: "Maximum Spell Slot Level",
     hint: "The highest spell slot level to allow (10-20)",
@@ -18,7 +46,7 @@ Hooks.once("init", () => {
     range: { min: 10, max: 20, step: 1 },
     default: 20,
     onChange: () => {
-      ui.notifications.info("Extended Spell Slots: Please reload the page for changes to take full effect.");
+      window.location.reload();
     }
   });
 
@@ -31,13 +59,6 @@ Hooks.once("init", () => {
     default: true
   });
 
-  game.settings.registerMenu("extended-spell-slots", "spellSlotManagerMenu", {
-    name: "Spell Slot Manager",
-    hint: "Open the Spell Slot Manager to add/remove spell slots for any actor",
-    scope: "world",
-    type: "extended-spell-slots"
-  });
-
   game.settings.register("extended-spell-slots", "openManager", {
     name: "Open Spell Slot Manager",
     hint: "Click to open the Spell Slot Manager",
@@ -47,22 +68,12 @@ Hooks.once("init", () => {
     default: false
   });
 
-  CONFIG.DND5E.maxSpellSlotLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
-
-  if (!CONFIG.DND5E.spellLevels) CONFIG.DND5E.spellLevels = {};
-  const maxLevel = CONFIG.DND5E.maxSpellSlotLevel;
-  for (let i = 10; i <= maxLevel; i++) {
-    CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
-  }
-
-  CONFIG.DND5E.spellSlotLevels = Array.from({ length: maxLevel }, (_, i) => i + 1);
-
-  if (!CONFIG.DND5E.spellScaling) CONFIG.DND5E.spellScaling = {};
-  for (let i = 10; i <= maxLevel; i++) {
-    CONFIG.DND5E.spellScaling[i] = `Slot ${i}`;
-  }
-
-  console.log(`🔮 Extended Spell Slots: Max level set to ${maxLevel}`);
+  game.settings.registerMenu("extended-spell-slots", "spellSlotManagerMenu", {
+    label: "Spell Slot Manager",
+    hint: "Open the Spell Slot Manager to add/remove spell slots for any actor",
+    scope: "world",
+    type: SpellSlotManager
+  });
 });
 
 class SpellSlotManager extends FormApplication {
@@ -210,7 +221,10 @@ class SpellSlotManager extends FormApplication {
 }
 
 Hooks.once("ready", () => {
-  game.settings.get("extended-spell-slots", "openManager");
+  if (!CONFIG.DND5E?.maxSpellSlotLevel) {
+    console.warn("Extended Spell Slots: System not initialized properly, aborting.");
+    return;
+  }
   
   const storedOpen = game.settings.get("extended-spell-slots", "openManager");
   if (storedOpen) {
