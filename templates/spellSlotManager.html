@@ -34,17 +34,17 @@
             {{#if this.isExtended}}<span style="color: #7a2519;">(Extended)</span>{{/if}}
           </td>
           <td style="padding: 8px; text-align: center;">
-            <span class="slot-value" data-level="{{this.level}}" data-action="click" style="cursor: pointer; padding: 4px 8px; background: #eee; border-radius: 4px;">
-              <i class="fas fa-minus" data-level="{{this.level}}" data-action="decrease" style="cursor: pointer;"></i>
-              <span style="font-weight: bold; margin: 0 8px;">{{this.value}}</span>
-              <i class="fas fa-plus" data-level="{{this.level}}" data-action="increase" style="cursor: pointer;"></i>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <button type="button" class="slot-value-decrease" data-level="{{this.level}}"><i class="fas fa-minus"></i></button>
+              <span style="font-weight: bold; min-width: 30px;">{{this.value}}</span>
+              <button type="button" class="slot-value-increase" data-level="{{this.level}}"><i class="fas fa-plus"></i></button>
             </span>
           </td>
           <td style="padding: 8px; text-align: center;">
-            <span class="slot-max" data-level="{{this.level}}" data-action="click" style="cursor: pointer; padding: 4px 8px; background: #eee; border-radius: 4px;">
-              <i class="fas fa-minus" data-level="{{this.level}}" data-action="decrease" style="cursor: pointer;"></i>
-              <span style="font-weight: bold; margin: 0 8px;">{{this.max}}</span>
-              <i class="fas fa-plus" data-level="{{this.level}}" data-action="increase" style="cursor: pointer;"></i>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <button type="button" class="slot-max-decrease" data-level="{{this.level}}"><i class="fas fa-minus"></i></button>
+              <span style="font-weight: bold; min-width: 30px;">{{this.max}}</span>
+              <button type="button" class="slot-max-increase" data-level="{{this.level}}"><i class="fas fa-plus"></i></button>
             </span>
           </td>
         </tr>

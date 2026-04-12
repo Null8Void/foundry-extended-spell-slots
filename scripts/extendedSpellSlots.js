@@ -35,143 +35,16 @@ Hooks.once("init", () => {
     name: "Spell Slot Manager",
     hint: "Open the Spell Slot Manager to add/remove spell slots for any actor",
     scope: "world",
-    type: class SpellSlotManagerMenu extends FormApplication {
-      constructor(...args) {
-        super(...args);
-        this.actors = null;
-      }
+    type: "extended-spell-slots"
+  });
 
-      static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
-          title: "Spell Slot Manager",
-          id: "extended-spell-slot-manager",
-          template: "modules/extended-spell-slots/templates/spellSlotManager.html",
-          width: 500,
-          height: "auto",
-          closeOnSubmit: false,
-          submitOnClose: false
-        });
-      }
-
-      async getData() {
-        const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
-        const actors = game.actors.filter(a => a.type === "character" || a.type === "npc");
-        
-        let selectedActor = actors[0];
-        if (this.selectedActorId) {
-          const found = actors.find(a => a.id === this.selectedActorId);
-          if (found) selectedActor = found;
-        }
-
-        const spellSlots = [];
-        if (selectedActor) {
-          const spells = selectedActor.system.spells || {};
-          for (let i = 1; i <= maxLevel; i++) {
-            const spellData = spells[`spell${i}`] || {};
-            spellSlots.push({
-              level: i,
-              max: spellData.max || 0,
-              value: spellData.value || 0,
-              isExtended: i > 9
-            });
-          }
-        }
-
-        return {
-          actors: actors.map(a => ({ id: a.id, name: a.name, selected: a.id === selectedActor?.id })),
-          selectedActor: selectedActor,
-          spellSlots: spellSlots,
-          maxLevel: maxLevel
-        };
-      }
-
-      activateListeners(html) {
-        super.activateListeners(html);
-
-        html.find('select[name="actor"]').on("change", (e) => {
-          this.selectedActorId = e.target.value;
-          this.render();
-        });
-
-        html.find(".slot-value").on("click", async (e) => {
-          const level = parseInt($(e.currentTarget).data("level"));
-          const action = $(e.currentTarget).data("action");
-          const actorId = html.find('select[name="actor"]').val();
-          const actor = game.actors.get(actorId);
-          if (actor) {
-            const key = `system.spells.spell${level}`;
-            const current = actor.system.spells?.[`spell${level}`] || {};
-            let newValue = current.value || 0;
-            
-            if (action === "increase") newValue++;
-            else if (action === "decrease") newValue = Math.max(0, newValue - 1);
-            else {
-              const input = prompt(`Enter new value for Level ${level} slots:`, newValue);
-              if (input !== null) newValue = Math.max(0, parseInt(input) || 0);
-            }
-            
-            await actor.update({ [`${key}.value`]: newValue });
-            this.render();
-          }
-        });
-
-        html.find(".slot-max").on("click", async (e) => {
-          const level = parseInt($(e.currentTarget).data("level"));
-          const action = $(e.currentTarget).data("action");
-          const actorId = html.find('select[name="actor"]').val();
-          const actor = game.actors.get(actorId);
-          if (actor) {
-            const key = `system.spells.spell${level}`;
-            const current = actor.system.spells?.[`spell${level}`] || {};
-            let newMax = current.max || 0;
-            
-            if (action === "increase") newMax++;
-            else if (action === "decrease") newMax = Math.max(0, newMax - 1);
-            else {
-              const input = prompt(`Enter new max for Level ${level} slots:`, newMax);
-              if (input !== null) newMax = Math.max(0, parseInt(input) || 0);
-            }
-            
-            await actor.update({ [`${key}.max`]: newMax });
-            this.render();
-          }
-        });
-
-        html.find(".add-extended").on("click", async (e) => {
-          const actorId = html.find('select[name="actor"]').val();
-          const actor = game.actors.get(actorId);
-          const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
-          
-          if (actor) {
-            const updates = {};
-            for (let i = 10; i <= maxLevel; i++) {
-              updates[`system.spells.spell${i}.max`] = 1;
-              updates[`system.spells.spell${i}.value`] = 1;
-            }
-            await actor.update(updates);
-            ui.notifications.info(`Added spell slots 10-${maxLevel} to ${actor.name}`);
-            this.render();
-          }
-        });
-
-        html.find(".remove-extended").on("click", async (e) => {
-          const actorId = html.find('select[name="actor"]').val();
-          const actor = game.actors.get(actorId);
-          const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
-          
-          if (actor) {
-            const updates = {};
-            for (let i = 10; i <= maxLevel; i++) {
-              updates[`system.spells.spell${i}.max`] = 0;
-              updates[`system.spells.spell${i}.value`] = 0;
-            }
-            await actor.update(updates);
-            ui.notifications.info(`Removed spell slots 10-${maxLevel} from ${actor.name}`);
-            this.render();
-          }
-        });
-      }
-    }
+  game.settings.register("extended-spell-slots", "openManager", {
+    name: "Open Spell Slot Manager",
+    hint: "Click to open the Spell Slot Manager",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false
   });
 
   CONFIG.DND5E.maxSpellSlotLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
@@ -192,7 +65,159 @@ Hooks.once("init", () => {
   console.log(`🔮 Extended Spell Slots: Max level set to ${maxLevel}`);
 });
 
+class SpellSlotManager extends FormApplication {
+  constructor(...args) {
+    super(...args);
+    this.selectedActorId = null;
+  }
+
+  static get defaultOptions() {
+    return {
+      title: "Spell Slot Manager",
+      id: "extended-spell-slot-manager",
+      template: "modules/extended-spell-slots/templates/spellSlotManager.html",
+      width: 500,
+      height: "auto",
+      closeOnSubmit: false,
+      submitOnClose: false
+    };
+  }
+
+  async getData() {
+    const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
+    const actors = game.actors.filter(a => a.type === "character" || a.type === "npc");
+    
+    let selectedActor = actors[0];
+    if (this.selectedActorId) {
+      const found = actors.find(a => a.id === this.selectedActorId);
+      if (found) selectedActor = found;
+    }
+
+    const spellSlots = [];
+    if (selectedActor) {
+      const spells = selectedActor.system.spells || {};
+      for (let i = 1; i <= maxLevel; i++) {
+        const spellData = spells[`spell${i}`] || {};
+        spellSlots.push({
+          level: i,
+          max: spellData.max || 0,
+          value: spellData.value || 0,
+          isExtended: i > 9
+        });
+      }
+    }
+
+    return {
+      actors: actors.map(a => ({ id: a.id, name: a.name, selected: a.id === selectedActor?.id })),
+      selectedActor: selectedActor,
+      spellSlots: spellSlots,
+      maxLevel: maxLevel
+    };
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+
+    html.find('select[name="actor"]').on("change", (e) => {
+      this.selectedActorId = e.target.value;
+      this.render();
+    });
+
+    html.find(".slot-value-increase").on("click", async (e) => {
+      e.preventDefault();
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      if (actor) {
+        const current = actor.system.spells?.[`spell${level}`] || {};
+        await actor.update({ [`system.spells.spell${level}.value`]: (current.value || 0) + 1 });
+        this.render();
+      }
+    });
+
+    html.find(".slot-value-decrease").on("click", async (e) => {
+      e.preventDefault();
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      if (actor) {
+        const current = actor.system.spells?.[`spell${level}`] || {};
+        await actor.update({ [`system.spells.spell${level}.value`]: Math.max(0, (current.value || 0) - 1) });
+        this.render();
+      }
+    });
+
+    html.find(".slot-max-increase").on("click", async (e) => {
+      e.preventDefault();
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      if (actor) {
+        const current = actor.system.spells?.[`spell${level}`] || {};
+        await actor.update({ [`system.spells.spell${level}.max`]: (current.max || 0) + 1 });
+        this.render();
+      }
+    });
+
+    html.find(".slot-max-decrease").on("click", async (e) => {
+      e.preventDefault();
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      if (actor) {
+        const current = actor.system.spells?.[`spell${level}`] || {};
+        await actor.update({ [`system.spells.spell${level}.max`]: Math.max(0, (current.max || 0) - 1) });
+        this.render();
+      }
+    });
+
+    html.find(".add-extended").on("click", async (e) => {
+      e.preventDefault();
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
+      
+      if (actor) {
+        const updates = {};
+        for (let i = 10; i <= maxLevel; i++) {
+          updates[`system.spells.spell${i}.max`] = 1;
+          updates[`system.spells.spell${i}.value`] = 1;
+        }
+        await actor.update(updates);
+        ui.notifications.info(`Added spell slots 10-${maxLevel} to ${actor.name}`);
+        this.render();
+      }
+    });
+
+    html.find(".remove-extended").on("click", async (e) => {
+      e.preventDefault();
+      const actorId = html.find('select[name="actor"]').val();
+      const actor = game.actors.get(actorId);
+      const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
+      
+      if (actor) {
+        const updates = {};
+        for (let i = 10; i <= maxLevel; i++) {
+          updates[`system.spells.spell${i}.max`] = 0;
+          updates[`system.spells.spell${i}.value`] = 0;
+        }
+        await actor.update(updates);
+        ui.notifications.info(`Removed spell slots 10-${maxLevel} from ${actor.name}`);
+        this.render();
+      }
+    });
+  }
+}
+
 Hooks.once("ready", () => {
+  game.settings.get("extended-spell-slots", "openManager");
+  
+  const storedOpen = game.settings.get("extended-spell-slots", "openManager");
+  if (storedOpen) {
+    game.settings.set("extended-spell-slots", "openManager", false);
+    new SpellSlotManager().render(true);
+  }
+
   extendSpellSlotUI();
   extendActorSheets();
   
@@ -200,7 +225,7 @@ Hooks.once("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.4.0 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.5.0 active!`);
 });
 
 function extendSpellSlotUI() {
@@ -279,13 +304,13 @@ function injectSheetControls(sheet, html) {
         Extended Spell Slots (10-${maxLevel})
       </h3>
       <div class="extended-slots-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="add-extended-slots-btn" data-actor-id="${actor.id}" style="flex: 1; min-width: 150px;">
+        <button type="button" class="add-extended-slots-btn" data-actor-id="${actor.id}">
           <i class="fas fa-plus"></i> Add Extended Slots
         </button>
-        <button type="button" class="remove-extended-slots-btn" data-actor-id="${actor.id}" style="flex: 1; min-width: 150px;">
+        <button type="button" class="remove-extended-slots-btn" data-actor-id="${actor.id}">
           <i class="fas fa-minus"></i> Remove Extended Slots
         </button>
-        <button type="button" class="open-slot-manager-btn" style="flex: 1; min-width: 150px;">
+        <button type="button" class="open-slot-manager-btn">
           <i class="fas fa-cog"></i> Slot Manager
         </button>
       </div>
@@ -331,6 +356,6 @@ function injectSheetControls(sheet, html) {
 
   html.find(".open-slot-manager-btn").on("click", (e) => {
     e.preventDefault();
-    new game.settings.menus.get("extended-spell-slots.spellSlotManagerMenu")?.object.render(true);
+    new SpellSlotManager().render(true);
   });
 }
