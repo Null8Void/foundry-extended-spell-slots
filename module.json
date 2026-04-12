@@ -3,7 +3,7 @@
   "name": "extended-spell-slots",
   "title": "Extended Spell Slots (5e)",
   "description": "Extends D&D 5e spell slots beyond 9th level, up to 20th level.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Null8Void",
   "compatibility": {
     "minimum": "13",
