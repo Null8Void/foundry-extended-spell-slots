@@ -232,7 +232,7 @@ Hooks.once("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.5.0 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.7.0 active!`);
 });
 
 function extendSpellSlotUI() {
