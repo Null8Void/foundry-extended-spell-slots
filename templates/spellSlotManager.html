@@ -1,64 +1,67 @@
 <form>
-  <p style="margin-bottom: 10px; color: #666;">Manage spell slots for actors. Select an actor and adjust their spell slots.</p>
-  
+  <p style="margin-bottom: 15px; color: #555; font-style: italic;">
+    Manage spell slots for actors. Select an actor and adjust their spell slots.
+  </p>
+
   <div class="form-group">
-    <label>Actor</label>
-    <select name="actor-select">
+    <label style="font-weight: bold;">Select Actor:</label>
+    <select name="actor">
       {{#each actors}}
       <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
       {{/each}}
     </select>
-    <button type="button" class="open-sheet-btn" style="margin-left: 10px;">
-      <i class="fas fa-user"></i> Open Sheet
-    </button>
   </div>
 
   {{#if selectedActor}}
-  <div class="spell-slots-list" style="margin-top: 15px;">
-    <h3 style="margin-bottom: 10px;">
+  <div style="margin-top: 15px;">
+    <h3 style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
       <i class="fas fa-magic"></i> Spell Slots for {{selectedActor.name}}
     </h3>
-    <table style="width: 100%; border-collapse: collapse;">
+    
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
       <thead>
-        <tr style="background: #ccc;">
-          <th style="padding: 8px; text-align: left; width: 25%;">Level</th>
-          <th style="padding: 8px; text-align: center; width: 37%;">Available</th>
-          <th style="padding: 8px; text-align: center; width: 38%;">Maximum</th>
+        <tr style="background: #555; color: white;">
+          <th style="padding: 8px; text-align: left;">Level</th>
+          <th style="padding: 8px; text-align: center;">Available</th>
+          <th style="padding: 8px; text-align: center;">Maximum</th>
         </tr>
       </thead>
       <tbody>
         {{#each spellSlots}}
-        <tr style="border-bottom: 1px solid #ddd; {{#if (gt this.level 9)}}background: rgba(122, 37, 25, 0.1);{{/if}}">
-          <td style="padding: 8px; text-align: left;">
-            {{ordinal this.level}} Level
-            {{#if (gt this.level 9)}}<i class="fas fa-star" style="color: #7a2519;" title="Extended Slot"></i>{{/if}}
+        <tr style="border-bottom: 1px solid #ddd; {{#if this.isExtended}}background: rgba(122, 37, 25, 0.1);{{/if}}">
+          <td style="padding: 8px;">
+            <strong>Level {{this.level}}</strong>
+            {{#if this.isExtended}}<span style="color: #7a2519;">(Extended)</span>{{/if}}
           </td>
           <td style="padding: 8px; text-align: center;">
-            <button type="button" class="slot-decrease" data-level="{{this.level}}">-</button>
-            <span style="display: inline-block; width: 40px; text-align: center; font-weight: bold;">{{this.value}}</span>
-            <button type="button" class="slot-increase" data-level="{{this.level}}">+</button>
+            <span class="slot-value" data-level="{{this.level}}" data-action="click" style="cursor: pointer; padding: 4px 8px; background: #eee; border-radius: 4px;">
+              <i class="fas fa-minus" data-level="{{this.level}}" data-action="decrease" style="cursor: pointer;"></i>
+              <span style="font-weight: bold; margin: 0 8px;">{{this.value}}</span>
+              <i class="fas fa-plus" data-level="{{this.level}}" data-action="increase" style="cursor: pointer;"></i>
+            </span>
           </td>
           <td style="padding: 8px; text-align: center;">
-            <button type="button" class="slot-max-decrease" data-level="{{this.level}}">-</button>
-            <span style="display: inline-block; width: 40px; text-align: center; font-weight: bold;">{{this.max}}</span>
-            <button type="button" class="slot-max-increase" data-level="{{this.level}}">+</button>
+            <span class="slot-max" data-level="{{this.level}}" data-action="click" style="cursor: pointer; padding: 4px 8px; background: #eee; border-radius: 4px;">
+              <i class="fas fa-minus" data-level="{{this.level}}" data-action="decrease" style="cursor: pointer;"></i>
+              <span style="font-weight: bold; margin: 0 8px;">{{this.max}}</span>
+              <i class="fas fa-plus" data-level="{{this.level}}" data-action="increase" style="cursor: pointer;"></i>
+            </span>
           </td>
         </tr>
         {{/each}}
       </tbody>
     </table>
-  </div>
 
-  <div class="form-group" style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px;">
-    <label style="margin-bottom: 8px; display: block;">Quick Actions</label>
-    <button type="button" class="add-all-slots" style="margin-right: 5px;">
-      <i class="fas fa-plus"></i> Add All Extended Slots (10-{{maxLevel}})
-    </button>
-    <button type="button" class="remove-all-slots">
-      <i class="fas fa-minus"></i> Remove All Extended Slots
-    </button>
+    <div style="display: flex; gap: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+      <button type="button" class="add-extended" style="flex: 1;">
+        <i class="fas fa-plus"></i> Add All Extended Slots (10-{{maxLevel}})
+      </button>
+      <button type="button" class="remove-extended" style="flex: 1;">
+        <i class="fas fa-minus"></i> Remove All Extended Slots
+      </button>
+    </div>
   </div>
   {{else}}
-  <p style="color: #666; font-style: italic;">No actors found in your world.</p>
+  <p style="color: #888; font-style: italic;">No actors found in your world.</p>
   {{/if}}
 </form>
