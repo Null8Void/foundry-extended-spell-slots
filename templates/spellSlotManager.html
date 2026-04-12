@@ -1,0 +1,54 @@
+<form>
+  <div class="form-group">
+    <label>Actor</label>
+    <select name="actor-select">
+      {{#each actors}}
+      <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+
+  {{#if selectedActor}}
+  <div class="form-group">
+    <label>Selected: {{selectedActor.name}}</label>
+  </div>
+
+  <div class="spell-slots-list">
+    <h3>Spell Slots</h3>
+    <table style="width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 20%; text-align: left;">Level</th>
+          <th style="width: 40%; text-align: center;">Available</th>
+          <th style="width: 40%; text-align: center;">Maximum</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each spellSlots}}
+        <tr>
+          <td style="text-align: left;">{{ordinal this.level}} Level</td>
+          <td style="text-align: center;">
+            <button type="button" class="slot-decrease" data-level="{{this.level}}">-</button>
+            <span style="display: inline-block; width: 30px; text-align: center;">{{this.value}}</span>
+            <button type="button" class="slot-increase" data-level="{{this.level}}">+</button>
+          </td>
+          <td style="text-align: center;">
+            <button type="button" class="slot-max-decrease" data-level="{{this.level}}">-</button>
+            <span style="display: inline-block; width: 30px; text-align: center;">{{this.max}}</span>
+            <button type="button" class="slot-max-increase" data-level="{{this.level}}">+</button>
+          </td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="form-group" style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+    <label>Quick Actions</label>
+    <button type="button" class="add-all-slots">Add All Extended Slots (10-{{maxLevel}})</button>
+    <button type="button" class="remove-all-slots">Remove All Extended Slots</button>
+  </div>
+  {{else}}
+  <p>No actors found.</p>
+  {{/if}}
+</form>

@@ -6,47 +6,283 @@ const MAX_SPELL_SLOT_LEVEL = 20;
 Hooks.once("init", () => {
   if (!CONFIG.DND5E) return;
 
-  CONFIG.DND5E.spellSlotLevels = Array.from({ length: MAX_SPELL_SLOT_LEVEL }, (_, i) => i + 1);
+  game.settings.register("extended-spell-slots", "maxSlotLevel", {
+    name: "Maximum Spell Slot Level",
+    hint: "The highest spell slot level to allow (10-20)",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 10, max: 20, step: 1 },
+    default: 20,
+    onChange: value => {
+      CONFIG.DND5E.maxSpellSlotLevel = value;
+      ui.notifications.info(`Extended Spell Slots: Max level set to ${value}`);
+    }
+  });
+
+  game.settings.register("extended-spell-slots", "showControls", {
+    name: "Show Add Spell Slot Button",
+    hint: "Add a button to character sheets to add spell slots",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  game.settings.registerMenu("extended-spell-slots", "spellSlotManager", {
+    name: "Spell Slot Manager",
+    label: "Manage Spell Slots",
+    hint: "Open the Spell Slot Manager to add/remove spell slots for actors",
+    scope: "world",
+    type: ExtendedSpellSlotManager
+  });
+
+  CONFIG.DND5E.maxSpellSlotLevel = game.settings.get("extended-spell-slots", "maxSlotLevel");
+
+  CONFIG.DND5E.spellSlotLevels = Array.from({ length: CONFIG.DND5E.maxSpellSlotLevel }, (_, i) => i + 1);
 
   CONFIG.DND5E.spellScaling = {
     ...CONFIG.DND5E.spellScaling,
-    [MAX_SPELL_SLOT_LEVEL]: `Slot ${MAX_SPELL_SLOT_LEVEL}`
+    [CONFIG.DND5E.maxSpellSlotLevel]: `Slot ${CONFIG.DND5E.maxSpellSlotLevel}`
   };
 
-  console.log(`🔮 CONFIG.DND5E.spellSlotLevels extended to ${MAX_SPELL_SLOT_LEVEL} levels`);
+  console.log(`🔮 CONFIG.DND5E.spellSlotLevels extended to ${CONFIG.DND5E.maxSpellSlotLevel} levels`);
 });
+
+class ExtendedSpellSlotManager extends FormApplication {
+  constructor(...args) {
+    super(...args);
+    this.selectedActor = null;
+  }
+
+  static get defaultOptions() {
+    return mergeObject(super.defaultOptions, {
+      title: "Spell Slot Manager",
+      id: "extended-spell-slot-manager",
+      template: "modules/extended-spell-slots/templates/spellSlotManager.html",
+      width: 500,
+      height: 600,
+      closeOnSubmit: false,
+      submitOnClose: false
+    });
+  }
+
+  async getData() {
+    const actors = game.actors.filter(a => a.type === "character" || a.type === "npc");
+    const selectedActor = this.selectedActor ? this.selectedActor : actors[0];
+    
+    return {
+      actors: actors.map(a => ({ id: a.id, name: a.name, selected: a.id === selectedActor?.id })),
+      selectedActor: selectedActor,
+      spellSlots: selectedActor ? this.getActorSpellSlots(selectedActor) : [],
+      maxLevel: CONFIG.DND5E.maxSpellSlotLevel || 20
+    };
+  }
+
+  getActorSpellSlots(actor) {
+    const slots = [];
+    const spells = actor.system.spells || {};
+    const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+
+    for (let i = 1; i <= maxLevel; i++) {
+      const spellData = spells[`spell${i}`] || {};
+      slots.push({
+        level: i,
+        max: spellData.max || 0,
+        value: spellData.value || 0,
+        override: spellData.override || null
+      });
+    }
+
+    return slots;
+  }
+
+  activateListeners(html) {
+    super.activateListeners(html);
+
+    html.find('select[name="actor-select"]').on("change", async (e) => {
+      this.selectedActor = game.actors.get(e.target.value);
+      this.render();
+    });
+
+    html.find(".slot-increase").on("click", async (e) => {
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.modifySlot(actor, level, 1);
+    });
+
+    html.find(".slot-decrease").on("click", async (e) => {
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.modifySlot(actor, level, -1);
+    });
+
+    html.find(".slot-max-increase").on("click", async (e) => {
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.modifySlotMax(actor, level, 1);
+    });
+
+    html.find(".slot-max-decrease").on("click", async (e) => {
+      const level = parseInt($(e.currentTarget).data("level"));
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.modifySlotMax(actor, level, -1);
+    });
+
+    html.find(".add-all-slots").on("click", async (e) => {
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.addAllSlots(actor);
+    });
+
+    html.find(".remove-all-slots").on("click", async (e) => {
+      const actor = game.actors.get(html.find('select[name="actor-select"]').val());
+      if (actor) await this.removeAllSlots(actor);
+    });
+  }
+
+  async modifySlot(actor, level, amount) {
+    const key = `system.spells.spell${level}.value`;
+    const current = actor.system.spells?.[`spell${level}`]?.value || 0;
+    const newValue = Math.max(0, current + amount);
+    
+    await actor.update({ [key]: newValue });
+    this.render();
+  }
+
+  async modifySlotMax(actor, level, amount) {
+    const key = `system.spells.spell${level}.max`;
+    const current = actor.system.spells?.[`spell${level}`]?.max || 0;
+    const newMax = Math.max(0, current + amount);
+    
+    await actor.update({ [key]: newMax });
+    this.render();
+  }
+
+  async addAllSlots(actor) {
+    const updates = {};
+    const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+    
+    for (let i = 10; i <= maxLevel; i++) {
+      updates[`system.spells.spell${i}.max`] = 1;
+      updates[`system.spells.spell${i}.value`] = 1;
+    }
+    
+    await actor.update(updates);
+    this.render();
+    ui.notifications.info(`Added spell slots 10-${maxLevel} to ${actor.name}`);
+  }
+
+  async removeAllSlots(actor) {
+    const updates = {};
+    const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+    
+    for (let i = 10; i <= maxLevel; i++) {
+      updates[`system.spells.spell${i}.max`] = 0;
+      updates[`system.spells.spell${i}.value`] = 0;
+    }
+    
+    await actor.update(updates);
+    this.render();
+    ui.notifications.info(`Removed spell slots 10-${maxLevel} from ${actor.name}`);
+  }
+
+  async _updateObject(event, formData) {
+    // Handle form submission if needed
+  }
+}
 
 Hooks.once("ready", () => {
   extendSpellSlotUI();
   extendActorSheetSpellSlots();
   extendSpellItemSheet();
 
-  console.log(`🔮 Extended Spell Slots (5e) active. Spell slots extended to level ${MAX_SPELL_SLOT_LEVEL}`);
+  if (game.settings.get("extended-spell-slots", "showControls")) {
+    addSpellSlotButtonToSheets();
+  }
+
+  console.log(`🔮 Extended Spell Slots (5e) active. Spell slots extended to level ${CONFIG.DND5E.maxSpellSlotLevel}`);
 });
 
-function extendSpellSlotUI() {
-  const originalCreateDialog = Dialog.prototype.render;
-  Dialog.prototype.render = function(force, options) {
-    const result = originalCreateDialog.call(this, force, options);
-    extendSpellSlotDropdowns(this);
-    return result;
-  };
+function addSpellSlotButtonToSheets() {
+  Hooks.on("renderActorSheet5eCharacter", (sheet, html) => {
+    addSpellSlotControls(html, sheet.actor);
+  });
 
-  Hooks.on("renderDialog", (dialog, html) => {
-    extendSpellSlotDropdowns(dialog);
+  Hooks.on("renderActorSheet5eNPC", (sheet, html) => {
+    addSpellSlotControls(html, sheet.actor);
   });
 }
 
-function extendSpellSlotDropdowns(dialog) {
-  const html = dialog.element || dialog;
-  const $html = typeof html === "string" ? $(html) : html;
+function addSpellSlotControls(html, actor) {
+  if (html.find(".extended-spell-slots-controls").length) return;
 
-  $html.find('select[name="slot"], select[name="level"], select[name="spellLevel"]').each(function() {
+  const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+  
+  const controlsHtml = `
+    <div class="extended-spell-slots-controls" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 14px;">Extended Spell Slots (10-${maxLevel})</h3>
+      <button class="add-extended-slots" data-actor-id="${actor.id}">
+        <i class="fas fa-plus"></i> Add All Extended Slots
+      </button>
+      <button class="remove-extended-slots" data-actor-id="${actor.id}" style="margin-left: 5px;">
+        <i class="fas fa-minus"></i> Remove All Extended Slots
+      </button>
+      <button class="open-slot-manager" style="margin-left: 5px;">
+        <i class="fas fa-cog"></i> Slot Manager
+      </button>
+    </div>
+  `;
+
+  html.find(".spell-slots").last().after(controlsHtml);
+
+  html.find(".add-extended-slots").on("click", async () => {
+    const actorId = $(event.currentTarget).data("actor-id");
+    const actor = game.actors.get(actorId);
+    if (actor) {
+      const updates = {};
+      for (let i = 10; i <= maxLevel; i++) {
+        updates[`system.spells.spell${i}.max`] = 1;
+        updates[`system.spells.spell${i}.value`] = 1;
+      }
+      await actor.update(updates);
+      ui.notifications.info(`Added spell slots 10-${maxLevel} to ${actor.name}`);
+    }
+  });
+
+  html.find(".remove-extended-slots").on("click", async () => {
+    const actorId = $(event.currentTarget).data("actor-id");
+    const actor = game.actors.get(actorId);
+    if (actor) {
+      const updates = {};
+      for (let i = 10; i <= maxLevel; i++) {
+        updates[`system.spells.spell${i}.max`] = 0;
+        updates[`system.spells.spell${i}.value`] = 0;
+      }
+      await actor.update(updates);
+      ui.notifications.info(`Removed spell slots 10-${maxLevel} from ${actor.name}`);
+    }
+  });
+
+  html.find(".open-slot-manager").on("click", () => {
+    new ExtendedSpellSlotManager().render(true);
+  });
+}
+
+function extendSpellSlotUI() {
+  Hooks.on("renderDialog", (dialog, html) => {
+    extendSpellSlotDropdowns(html);
+  });
+}
+
+function extendSpellSlotDropdowns(html) {
+  const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+
+  html.find('select[name="slot"], select[name="level"], select[name="spellLevel"]').each(function() {
     const $select = $(this);
     const currentMax = parseInt($select.find("option:last-child").val()) || 9;
     
-    if (currentMax < MAX_SPELL_SLOT_LEVEL) {
-      for (let i = 10; i <= MAX_SPELL_SLOT_LEVEL; i++) {
+    if (currentMax < maxLevel) {
+      for (let i = 10; i <= maxLevel; i++) {
         if (!$select.find(`option[value="${i}"]`).length) {
           $select.append(`<option value="${i}">${ordinal(i)} Level</option>`);
         }
@@ -54,12 +290,12 @@ function extendSpellSlotDropdowns(dialog) {
     }
   });
 
-  $html.find('input[type="number"][name*="level"], input[type="number"][name*="slot"]').each(function() {
+  html.find('input[type="number"][name*="level"], input[type="number"][name*="slot"]').each(function() {
     const $input = $(this);
     const max = parseInt($input.attr("max")) || 9;
     
-    if (max < MAX_SPELL_SLOT_LEVEL) {
-      $input.attr("max", MAX_SPELL_SLOT_LEVEL);
+    if (max < maxLevel) {
+      $input.attr("max", maxLevel);
       $input.attr("min", "0");
     }
   });
@@ -68,22 +304,22 @@ function extendSpellSlotDropdowns(dialog) {
 function extendActorSheetSpellSlots() {
   Hooks.on("renderActorSheet5eCharacter", (sheet, html) => {
     extendSpellSlotInputs(html);
-    extendSpellSlotUses(html);
   });
 
   Hooks.on("renderActorSheet5eNPC", (sheet, html) => {
     extendSpellSlotInputs(html);
-    extendSpellSlotUses(html);
   });
 }
 
 function extendSpellSlotInputs(html) {
+  const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+
   html.find('.spell-slots input[type="number"], .spell-slot-input input').each(function() {
     const $input = $(this);
     const max = parseInt($input.attr("max")) || 9;
     
-    if (max < MAX_SPELL_SLOT_LEVEL) {
-      $input.attr("max", MAX_SPELL_SLOT_LEVEL);
+    if (max < maxLevel) {
+      $input.attr("max", maxLevel);
     }
   });
 
@@ -94,46 +330,15 @@ function extendSpellSlotInputs(html) {
     if ($select.length) {
       const max = parseInt($select.attr("max")) || 9;
       
-      if (max < MAX_SPELL_SLOT_LEVEL) {
+      if (max < maxLevel) {
         if ($select.is("select")) {
-          for (let i = 10; i <= MAX_SPELL_SLOT_LEVEL; i++) {
+          for (let i = 10; i <= maxLevel; i++) {
             if (!$select.find(`option[value="${i}"]`).length) {
               $select.append(`<option value="${i}">${ordinal(i)}</option>`);
             }
           }
         } else {
-          $select.attr("max", MAX_SPELL_SLOT_LEVEL);
-        }
-      }
-    }
-  });
-}
-
-function extendSpellSlotUses(html) {
-  html.find(".spell-slot-uses, .slot-uses").each(function() {
-    const $container = $(this);
-    const $buttons = $container.find("button");
-
-    if ($buttons.length) {
-      const maxSlotLevel = $buttons.length;
-      
-      if (maxSlotLevel < MAX_SPELL_SLOT_LEVEL) {
-        const $lastButton = $buttons.last();
-        const $parent = $container.find(".slot-max-override, .spell-slots .info, .slots-header");
-        
-        for (let i = maxSlotLevel + 1; i <= MAX_SPELL_SLOT_LEVEL; i++) {
-          const $newButton = $lastButton.clone();
-          $newButton.attr("data-slot", i);
-          $newButton.find(".slot-level").text(i);
-          $newButton.find(".slot-value").text("0");
-          $newButton.find(".slot-max").text("0");
-          $newButton.addClass("empty");
-          
-          if ($parent.length) {
-            $parent.after($newButton);
-          } else {
-            $container.append($newButton);
-          }
+          $select.attr("max", maxLevel);
         }
       }
     }
@@ -156,14 +361,16 @@ function extendSpellItemSheet() {
   });
 
   Hooks.on("renderSpellSlotConfig", (app, html) => {
-    extendSpellSlotDropdowns(app);
+    extendSpellSlotDropdowns(html);
+    
+    const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
     
     html.find("input[name='max']").each(function() {
       const $input = $(this);
       const max = parseInt($input.attr("max")) || 9;
       
-      if (max < MAX_SPELL_SLOT_LEVEL) {
-        $input.attr("max", MAX_SPELL_SLOT_LEVEL);
+      if (max < maxLevel) {
+        $input.attr("max", maxLevel);
       }
     });
 
@@ -171,8 +378,8 @@ function extendSpellItemSheet() {
       const $select = $(this);
       const currentMax = parseInt($select.find("option:last-child").val()) || 9;
       
-      if (currentMax < MAX_SPELL_SLOT_LEVEL) {
-        for (let i = 10; i <= MAX_SPELL_SLOT_LEVEL; i++) {
+      if (currentMax < maxLevel) {
+        for (let i = 10; i <= maxLevel; i++) {
           if (!$select.find(`option[value="${i}"]`).length) {
             $select.append(`<option value="${i}">${ordinal(i)} Level</option>`);
           }
@@ -183,12 +390,14 @@ function extendSpellItemSheet() {
 }
 
 function extendSpellLevelSelect(html, selector) {
+  const maxLevel = CONFIG.DND5E.maxSpellSlotLevel || 20;
+  
   html.find(selector).each(function() {
     const $select = $(this);
     const currentMax = parseInt($select.find("option:last-child").val()) || 9;
     
-    if (currentMax < MAX_SPELL_SLOT_LEVEL) {
-      for (let i = 10; i <= MAX_SPELL_SLOT_LEVEL; i++) {
+    if (currentMax < maxLevel) {
+      for (let i = 10; i <= maxLevel; i++) {
         if (!$select.find(`option[value="${i}"]`).length) {
           $select.append(`<option value="${i}">${ordinal(i)} Level</option>`);
         }
@@ -202,26 +411,3 @@ function ordinal(n) {
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
-
-libWrapper && libWrapper.register("extended-spell-slots", "CONFIG.Actor.documentClass.prototype._update", async function(wrapped, formData, ...args) {
-  if (typeof formData === "object" && !Array.isArray(formData)) {
-    if (formData["system.spells?.spell1?.level"]) {
-      let level = parseInt(formData["system.spells?.spell1?.level"]);
-      if (level > MAX_SPELL_SLOT_LEVEL) {
-        formData["system.spells?.spell1?.level"] = MAX_SPELL_SLOT_LEVEL;
-      }
-    }
-    
-    for (let i = 1; i <= MAX_SPELL_SLOT_LEVEL; i++) {
-      const levelKey = `system.spells.spell${i}.max`;
-      if (formData[levelKey] !== undefined) {
-        let max = parseInt(formData[levelKey]);
-        if (max > 99) {
-          formData[levelKey] = 99;
-        }
-      }
-    }
-  }
-  
-  return wrapped(formData, ...args);
-}, "WRAPPER");
