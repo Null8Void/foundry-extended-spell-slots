@@ -33,6 +33,10 @@ Hooks.once("dnd5e.init", () => {
     }
   }
 
+  if (!CONFIG.DND5E.spellSlotTable && CONFIG.DND5E.SPELL_SLOT_TABLE) {
+    CONFIG.DND5E.spellSlotTable = CONFIG.DND5E.SPELL_SLOT_TABLE;
+  }
+
   console.log(`🔮 Extended Spell Slots: Max level set to ${maxLevel}`);
 });
 
@@ -233,13 +237,13 @@ Hooks.once("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.7.0 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.1 active!`);
 });
 
 function registerSpellSlotHooks() {
-  Hooks.on("dnd5e.prepareLeveledSlots", (spells, actor, progression) => {
+  Hooks.on("dnd5e.prepareSpellSlots", (spells, actor, progression) => {
     const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
-    const slotLevel = progression.slot || 0;
+    const spellLevel = progression.spell || progression.slot || 0;
     
     for (let i = 10; i <= maxLevel; i++) {
       const spellKey = `spell${i}`;
@@ -253,8 +257,11 @@ function registerSpellSlotHooks() {
       slot.type = "leveled";
       
       if (slot.max === undefined) {
-        const effectiveLevel = Math.min(slotLevel, i);
-        if (effectiveLevel >= i && CONFIG.DND5E.SPELL_SLOT_TABLE[effectiveLevel - 1]) {
+        const effectiveLevel = Math.min(spellLevel, i);
+        if (effectiveLevel >= i && CONFIG.DND5E.spellSlotTable?.[effectiveLevel - 1]) {
+          const levelTable = CONFIG.DND5E.spellSlotTable[effectiveLevel - 1];
+          slot.max = levelTable[i - 1] || 0;
+        } else if (CONFIG.DND5E.SPELL_SLOT_TABLE?.[effectiveLevel - 1]) {
           const levelTable = CONFIG.DND5E.SPELL_SLOT_TABLE[effectiveLevel - 1];
           slot.max = levelTable[i - 1] || 0;
         } else {
