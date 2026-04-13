@@ -4,6 +4,8 @@
 const MAX_SPELL_SLOT_LEVEL = 20;
 
 Hooks.once("dnd5e.init", () => {
+  console.log("🔮 Extended Spell Slots: dnd5e.init fired");
+  
   if (!CONFIG.DND5E) {
     console.error("Extended Spell Slots: DND5E system not found");
     return;
@@ -11,6 +13,8 @@ Hooks.once("dnd5e.init", () => {
 
   const maxLevel = Math.max(20, Object.keys(CONFIG.DND5E.spellLevels).length - 1);
   CONFIG.DND5E.maxSpellSlotLevel = maxLevel;
+
+  console.log("🔮 Extended Spell Slots: maxSpellSlotLevel set to", maxLevel);
 
   for (let i = 10; i <= maxLevel; i++) {
     if (!CONFIG.DND5E.spellLevels[i]) {
@@ -38,9 +42,7 @@ Hooks.once("dnd5e.init", () => {
   }
 
   console.log(`🔮 Extended Spell Slots: Max level set to ${maxLevel}`);
-});
 
-Hooks.on("init", () => {
   game.settings.register("extended-spell-slots", "maxSlotLevel", {
     name: "Maximum Spell Slot Level",
     hint: "The highest spell slot level to allow (10-20)",
@@ -217,9 +219,34 @@ class SpellSlotManager extends FormApplication {
   }
 }
 
-Hooks.once("ready", () => {
+Hooks.on("ready", () => {
+  console.log("🔮 Extended Spell Slots: ready hook fired");
+  
+  // Ensure maxSpellSlotLevel is set (in case dnd5e.init didn't run or got reset)
+  if (CONFIG.DND5E && !CONFIG.DND5E.maxSpellSlotLevel) {
+    CONFIG.DND5E.maxSpellSlotLevel = 20;
+    
+    for (let i = 10; i <= 20; i++) {
+      if (!CONFIG.DND5E.spellLevels[i]) {
+        CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
+      }
+    }
+    
+    CONFIG.DND5E.spellSlotLevels = Array.from({ length: 20 }, (_, i) => i + 1);
+    
+    if (!CONFIG.DND5E.spellScaling) CONFIG.DND5E.spellScaling = {};
+    for (let i = 10; i <= 20; i++) {
+      if (!CONFIG.DND5E.spellScaling[i]) {
+        CONFIG.DND5E.spellScaling[i] = `Slot ${i}`;
+      }
+    }
+    
+    console.log("🔮 Extended Spell Slots: maxSpellSlotLevel set to 20 in ready hook");
+  }
+  
   if (!CONFIG.DND5E?.maxSpellSlotLevel) {
     console.warn("Extended Spell Slots: System not initialized properly, aborting.");
+    console.warn("CONFIG.DND5E:", CONFIG.DND5E);
     return;
   }
   
@@ -237,7 +264,7 @@ Hooks.once("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.3 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.4 active!`);
 });
 
 function registerSpellSlotHooks() {
