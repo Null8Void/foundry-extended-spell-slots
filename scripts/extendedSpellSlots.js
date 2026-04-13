@@ -17,10 +17,8 @@ Hooks.once("dnd5e.init", () => {
   console.log("🔮 Extended Spell Slots: maxSpellSlotLevel set to", maxLevel);
 
   for (let i = 10; i <= maxLevel; i++) {
-    if (!CONFIG.DND5E.spellLevels[i]) {
-      const suffix = i === 1 ? "st" : i === 2 ? "nd" : i === 3 ? "rd" : "th";
-      CONFIG.DND5E.spellLevels[i] = `${i}${suffix} Level`;
-    }
+    const suffix = i === 11 ? "th" : i === 12 ? "th" : i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
+    CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
   }
 
   CONFIG.DND5E.spellSlotLevels = Array.from({ length: maxLevel }, (_, i) => i + 1);
@@ -229,8 +227,8 @@ Hooks.on("ready", () => {
     
     for (let i = 10; i <= 20; i++) {
       if (!CONFIG.DND5E.spellLevels[i]) {
-        const suffix = i === 1 ? "st" : i === 2 ? "nd" : i === 3 ? "rd" : "th";
-        CONFIG.DND5E.spellLevels[i] = `${i}${suffix} Level`;
+        const suffix = i === 11 ? "th" : i === 12 ? "th" : i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
+        CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
       }
     }
     
