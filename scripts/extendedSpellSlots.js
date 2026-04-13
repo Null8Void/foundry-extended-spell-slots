@@ -266,7 +266,7 @@ Hooks.on("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.5 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.6 active!`);
 });
 
 function registerSpellSlotHooks() {
@@ -297,7 +297,8 @@ function registerSpellSlotHooks() {
       }
       
       const slot = spells[spellKey];
-      slot.label = CONFIG.DND5E.spellLevels[i];
+      const suffix = i === 11 ? "th" : i === 12 ? "th" : i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
+      slot.label = `${i}${suffix} Level`;
       slot.level = i;
       slot.type = "leveled";
       
@@ -306,7 +307,7 @@ function registerSpellSlotHooks() {
         slot.value = 1;
       }
       
-      console.log(`🔮 Extended Spell Slots: Created spell${i} with max=${slot.max}, value=${slot.value}`);
+      console.log(`🔮 Extended Spell Slots: Created spell${i} with label=${slot.label}, max=${slot.max}, value=${slot.value}`);
     }
   });
 }
