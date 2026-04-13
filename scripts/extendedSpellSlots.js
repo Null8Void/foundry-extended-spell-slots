@@ -18,7 +18,8 @@ Hooks.once("dnd5e.init", () => {
 
   for (let i = 10; i <= maxLevel; i++) {
     if (!CONFIG.DND5E.spellLevels[i]) {
-      CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
+      const suffix = i === 1 ? "st" : i === 2 ? "nd" : i === 3 ? "rd" : "th";
+      CONFIG.DND5E.spellLevels[i] = `${i}${suffix} Level`;
     }
   }
 
@@ -228,7 +229,8 @@ Hooks.on("ready", () => {
     
     for (let i = 10; i <= 20; i++) {
       if (!CONFIG.DND5E.spellLevels[i]) {
-        CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
+        const suffix = i === 1 ? "st" : i === 2 ? "nd" : i === 3 ? "rd" : "th";
+        CONFIG.DND5E.spellLevels[i] = `${i}${suffix} Level`;
       }
     }
     
@@ -264,7 +266,7 @@ Hooks.on("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.4 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.5 active!`);
 });
 
 function registerSpellSlotHooks() {
