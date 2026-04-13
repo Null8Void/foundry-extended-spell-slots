@@ -225,6 +225,7 @@ Hooks.once("ready", () => {
     new SpellSlotManager().render(true);
   }
 
+  registerSpellSlotHooks();
   extendSpellSlotUI();
   extendActorSheets();
   
@@ -234,6 +235,39 @@ Hooks.once("ready", () => {
 
   console.log(`🔮 Extended Spell Slots (5e) v1.7.0 active!`);
 });
+
+function registerSpellSlotHooks() {
+  Hooks.on("dnd5e.prepareLeveledSlots", (spells, actor, progression) => {
+    const maxLevel = game.settings.get("extended-spell-slots", "maxSlotLevel") || MAX_SPELL_SLOT_LEVEL;
+    const slotLevel = progression.slot || 0;
+    
+    for (let i = 10; i <= maxLevel; i++) {
+      const spellKey = `spell${i}`;
+      if (!spells[spellKey]) {
+        spells[spellKey] = { value: 0 };
+      }
+      
+      const slot = spells[spellKey];
+      slot.label = CONFIG.DND5E.spellLevels[i];
+      slot.level = i;
+      slot.type = "leveled";
+      
+      if (slot.max === undefined) {
+        const effectiveLevel = Math.min(slotLevel, i);
+        if (effectiveLevel >= i && CONFIG.DND5E.SPELL_SLOT_TABLE[effectiveLevel - 1]) {
+          const levelTable = CONFIG.DND5E.SPELL_SLOT_TABLE[effectiveLevel - 1];
+          slot.max = levelTable[i - 1] || 0;
+        } else {
+          slot.max = slot.max || 0;
+        }
+      }
+      
+      if (slot.value === undefined) {
+        slot.value = Math.min(slot.value || 0, slot.max || 0);
+      }
+    }
+  });
+}
 
 function extendSpellSlotUI() {
   Hooks.on("renderDialog", (dialog, html) => {
