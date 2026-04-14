@@ -281,7 +281,7 @@ Hooks.on("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.8 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.7 active!`);
   
   if (typeof window !== "undefined") {
     window.ExtendedSpellSlotsDebug = {
@@ -328,6 +328,11 @@ Hooks.on("ready", () => {
       }
     };
     console.log("🔮 Extended Spell Slots: Debug helper available at window.ExtendedSpellSlotsDebug.verify()");
+    
+    setTimeout(() => {
+      console.log("🔮 Extended Spell Slots: Running automatic verification...");
+      window.ExtendedSpellSlotsDebug.verify();
+    }, 1000);
   }
 });
 
