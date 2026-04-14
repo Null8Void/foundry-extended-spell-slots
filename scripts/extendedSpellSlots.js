@@ -22,6 +22,8 @@ Hooks.once("dnd5e.init", () => {
     if (!CONFIG.DND5E.spellcasting) CONFIG.DND5E.spellcasting = {};
     if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
     CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.Spellcasting.Slots.Spell${i}`;
+    
+    console.log(`🔮 Extended Spell Slots: Set spellLevels[${i}] = 'DND5E.SpellLevel${i}', spellcasting.slots.spell${i} = 'DND5E.Spellcasting.Slots.Spell${i}'`);
   }
 
   CONFIG.DND5E.spellSlotLevels = Array.from({ length: maxLevel }, (_, i) => i + 1);
@@ -37,6 +39,7 @@ Hooks.once("dnd5e.init", () => {
     while (CONFIG.DND5E.SPELL_SLOT_TABLE.length < 20) {
       CONFIG.DND5E.SPELL_SLOT_TABLE.push([4, 3, 3, 3, 3, 2, 2, 2, 1]);
     }
+    console.log(`🔮 Extended Spell Slots: Extended SPELL_SLOT_TABLE to ${CONFIG.DND5E.SPELL_SLOT_TABLE.length} levels`);
   }
 
   if (!CONFIG.DND5E.spellSlotTable && CONFIG.DND5E.SPELL_SLOT_TABLE) {
@@ -235,7 +238,10 @@ Hooks.on("ready", () => {
       }
       if (!CONFIG.DND5E.spellcasting) CONFIG.DND5E.spellcasting = {};
       if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
-      CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.Spellcasting.Slots.Spell${i}`;
+      if (!CONFIG.DND5E.spellcasting.slots[`spell${i}`]) {
+        CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.Spellcasting.Slots.Spell${i}`;
+        console.log(`🔮 Extended Spell Slots: Added spellcasting.slots.spell${i} = 'DND5E.Spellcasting.Slots.Spell${i}' in ready hook`);
+      }
     }
     
     CONFIG.DND5E.spellSlotLevels = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -248,6 +254,11 @@ Hooks.on("ready", () => {
     }
     
     console.log("🔮 Extended Spell Slots: maxSpellSlotLevel set to 20 in ready hook");
+    
+    console.log("🔮 Extended Spell Slots: Verification - spellLevels[10-20]:", 
+      Array.from({length: 11}, (_, i) => i+10).map(i => `[${i}]=${CONFIG.DND5E.spellLevels[i]}`).join(", "));
+    console.log("🔮 Extended Spell Slots: Verification - spellcasting.slots[spell10-20]:",
+      Array.from({length: 11}, (_, i) => i+10).map(i => `spell${i}=${CONFIG.DND5E.spellcasting?.slots?.[`spell${i}`]`}).join(", "));
   }
   
   if (!CONFIG.DND5E?.maxSpellSlotLevel) {
@@ -271,6 +282,47 @@ Hooks.on("ready", () => {
   }
 
   console.log(`🔮 Extended Spell Slots (5e) v1.8.6 active!`);
+  
+  if (typeof window !== "undefined") {
+    window.ExtendedSpellSlotsDebug = {
+      verify: () => {
+        console.group("🔮 Extended Spell Slots - Debug Verification");
+        const issues = [];
+        
+        const maxLevel = CONFIG.DND5E.maxSpellSlotLevel;
+        console.log(`maxSpellSlotLevel: ${maxLevel}`);
+        
+        for (let i = 10; i <= maxLevel; i++) {
+          const spellLevelKey = CONFIG.DND5E.spellLevels[i];
+          const slotKey = CONFIG.DND5E.spellcasting?.slots?.[`spell${i}`];
+          const localizedSpellLevel = game.i18n.localize(spellLevelKey);
+          const localizedSlot = game.i18n.localize(slotKey);
+          
+          console.log(`Level ${i}: spellLevels[${i}]='${spellLevelKey}' -> '${localizedSpellLevel}', spellcasting.slots.spell${i}='${slotKey}' -> '${localizedSlot}'`);
+          
+          if (localizedSlot === slotKey) {
+            issues.push(`Level ${i}: Missing localization for spell slot (got key back: ${slotKey})`);
+          }
+          if (localizedSpellLevel === spellLevelKey) {
+            issues.push(`Level ${i}: Missing localization for spell level (got key back: ${spellLevelKey})`);
+          }
+        }
+        
+        console.groupEnd();
+        
+        if (issues.length > 0) {
+          console.error("🔮 Extended Spell Slots - Issues found:", issues);
+          ui.notifications.error(`Extended Spell Slots: ${issues.length} issue(s) detected - check console`);
+        } else {
+          console.log("🔮 Extended Spell Slots - All checks passed!");
+          ui.notifications.info("Extended Spell Slots: All labels verified successfully");
+        }
+        
+        return { maxLevel, issues };
+      }
+    };
+    console.log("🔮 Extended Spell Slots: Debug helper available at window.ExtendedSpellSlotsDebug.verify()");
+  }
 });
 
 function registerSpellSlotHooks() {
