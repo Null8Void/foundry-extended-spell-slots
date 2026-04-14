@@ -281,7 +281,7 @@ Hooks.on("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.7 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.8 active!`);
   
   if (typeof window !== "undefined") {
     window.ExtendedSpellSlotsDebug = {
