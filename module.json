@@ -31,5 +31,6 @@
     }
   ],
   "url": "https://github.com/Null8Void/foundry-extended-spell-slots",
-  "manifest": "https://raw.githubusercontent.com/Null8Void/foundry-extended-spell-slots/main/module.json"
+  "manifest": "https://raw.githubusercontent.com/Null8Void/foundry-extended-spell-slots/main/module.json",
+  "download": "https://github.com/Null8Void/foundry-extended-spell-slots/archive/refs/heads/main.zip"
 }
