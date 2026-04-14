@@ -19,6 +19,9 @@ Hooks.once("dnd5e.init", () => {
   for (let i = 10; i <= maxLevel; i++) {
     const suffix = i === 11 ? "th" : i === 12 ? "th" : i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
     CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
+    if (!CONFIG.DND5E.spellcasting) CONFIG.DND5E.spellcasting = {};
+    if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
+    CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.Spellcasting.Slots.Spell${i}`;
   }
 
   CONFIG.DND5E.spellSlotLevels = Array.from({ length: maxLevel }, (_, i) => i + 1);
@@ -230,6 +233,9 @@ Hooks.on("ready", () => {
         const suffix = i === 11 ? "th" : i === 12 ? "th" : i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
         CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
       }
+      if (!CONFIG.DND5E.spellcasting) CONFIG.DND5E.spellcasting = {};
+      if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
+      CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.Spellcasting.Slots.Spell${i}`;
     }
     
     CONFIG.DND5E.spellSlotLevels = Array.from({ length: 20 }, (_, i) => i + 1);
