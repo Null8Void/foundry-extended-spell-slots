@@ -8,7 +8,7 @@
   "compatibility": {
     "minimum": "13",
     "verified": "14",
-    "maximum": "14"
+    "maximum": "14.999"
   },
   "systems": [
     {
@@ -17,7 +17,7 @@
       "compatibility": {
         "minimum": "5.0.0",
         "verified": "5.3.0",
-        "maximum": "5.3.0"
+        "maximum": "5.999"
       }
     }
   ],
