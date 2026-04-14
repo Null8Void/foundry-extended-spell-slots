@@ -281,7 +281,7 @@ Hooks.on("ready", () => {
     addSheetControls();
   }
 
-  console.log(`🔮 Extended Spell Slots (5e) v1.8.6 active!`);
+  console.log(`🔮 Extended Spell Slots (5e) v1.8.8 active!`);
   
   if (typeof window !== "undefined") {
     window.ExtendedSpellSlotsDebug = {
@@ -298,7 +298,13 @@ Hooks.on("ready", () => {
           const localizedSpellLevel = game.i18n.localize(spellLevelKey);
           const localizedSlot = game.i18n.localize(slotKey);
           
-          console.log(`Level ${i}: spellLevels[${i}]='${spellLevelKey}' -> '${localizedSpellLevel}', spellcasting.slots.spell${i}='${slotKey}' -> '${localizedSlot}'`);
+          console.log(`Level ${i}:`);
+          console.log(`  spellLevels[${i}]: CONFIG.DND5E.spellLevels[${i}] = '${spellLevelKey}'`);
+          console.log(`    -> localized: '${localizedSpellLevel}'`);
+          console.log(`    -> Used by: Spell item level display (system.level), spell scroll creation`);
+          console.log(`  spellcasting.slots.spell${i}: CONFIG.DND5E.spellcasting.slots.spell${i} = '${slotKey}'`);
+          console.log(`    -> localized: '${localizedSlot}'`);
+          console.log(`    -> Used by: Character sheet spell slot labels, spell slot dropdowns`);
           
           if (localizedSlot === slotKey) {
             issues.push(`Level ${i}: Missing localization for spell slot (got key back: ${slotKey})`);
