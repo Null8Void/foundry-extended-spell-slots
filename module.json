@@ -3,7 +3,7 @@
   "name": "extended-spell-slots",
   "title": "Extended Spell Slots (5e)",
   "description": "Extends D&D 5e spell slots beyond 9th level, up to 20th level.",
-  "version": "1.8.9",
+  "version": "1.8.10",
   "author": "Null8Void",
   "compatibility": {
     "minimum": "13",
@@ -27,7 +27,8 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "languages/en.json"
+      "path": "languages/en.json",
+      "system": "dnd5e"
     }
   ],
   "url": "https://github.com/Null8Void/foundry-extended-spell-slots",
