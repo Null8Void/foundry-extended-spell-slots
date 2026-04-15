@@ -21,7 +21,7 @@ Hooks.once("dnd5e.init", () => {
     CONFIG.DND5E.spellLevels[i] = `DND5E.SpellLevel${i}`;
     if (!CONFIG.DND5E.spellcasting) CONFIG.DND5E.spellcasting = {};
     if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
-    CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `${i}${suffix} Level`;
+        CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.SPELLCASTING.SLOTS.spell${i}`;
     
     console.log(`[Extended Spell Slots] spellLevels[${i}] = '${CONFIG.DND5E.spellLevels[i]}', spellcasting.slots.spell${i} = '${CONFIG.DND5E.spellcasting.slots[`spell${i}`]}'`);
   }
@@ -243,7 +243,7 @@ Hooks.on("ready", () => {
       if (!CONFIG.DND5E.spellcasting.slots) CONFIG.DND5E.spellcasting.slots = {};
       if (!CONFIG.DND5E.spellcasting.slots[`spell${i}`]) {
         const suffix = i === 11 || i === 12 || i === 13 ? "th" : i % 10 === 1 ? "st" : i % 10 === 2 ? "nd" : i % 10 === 3 ? "rd" : "th";
-        CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `${i}${suffix} Level`;
+    CONFIG.DND5E.spellcasting.slots[`spell${i}`] = `DND5E.SPELLCASTING.SLOTS.spell${i}`;
       }
     }
     
